@@ -127,9 +127,9 @@ scores_setup2 = Development.grid_search(devcorpus_setup2, candidates_setup2, lan
 best_parameters = Development.define_best_parameters('iv'=[scores_setup1, scores_setup2])
 
 # perform grid search for oov penalty
-oov_scores_setup1 = Development.grid_search(devcorpus_setup1, candidates_list, language='en')
-oov_scores_setup2 = Development.grid_search(devcorpus_setup2, candidates_list, language='en')
-oov_scores_setup3 = Development.grid_search(devcorpus_setup3, candidates_list, language='en')
+oov_scores_setup1 = Development.tune_oov(devcorpus_setup1, candidates_list, language='en')
+oov_scores_setup2 = Development.tune_oov(devcorpus_setup2, candidates_list, language='en')
+oov_scores_setup3 = Development.tune_oov(devcorpus_setup3, candidates_list, language='en')
 
 # search for best averaged oov penalty
 best_oov = Development.define_best_parameters('iv'=[oov_scores_setup1, oov_scores_setup2], 'oov'=oov_scores_setup3)
