@@ -18,9 +18,11 @@ All requirements are available from pip, except ```fastText```
 
 In order to build ```fastText```, use the following:
 
-```$ git clone https://github.com/facebookresearch/fastText.git
+```
+$ git clone https://github.com/facebookresearch/fastText.git
 $ cd fastText
-$ make```
+$ make
+```
 
 To extract our manually annotated MIMIC-III test data, you should have access to the [MIMIC-III database](https://mimic.physionet.org).
 
