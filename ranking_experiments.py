@@ -53,7 +53,7 @@ class Development(object):
         # OUTPUT
         self.ranking_method = parameters['ranking_method']  # item from ["context", "noisy_channel", "frequency",
         # "ensemble"]
-        self.frequency_dict = json.load(pathtofrequencies, 'r')  # path to frequency list
+        self.frequency_dict = json.load(open(pathtofrequencies, 'r'))  # path to frequency list
         self.k = parameters['k-best']  # positive natural number
 
     @staticmethod
