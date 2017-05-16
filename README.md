@@ -14,7 +14,11 @@ MIT
 * [Facebook fastText](https://github.com/facebookresearch/fastText)
 * [fasttext](https://github.com/salestock/fastText.py), a Python interface for Facebook fastText
 
-All requirements are available from pip, except ```fastText```
+All requirements are available from pip, except ```fastText```. To install these requirements, just run
+
+```pip install -r requirements.txt```
+
+from inside the cloned repository.
 
 In order to build ```fastText```, use the following:
 
@@ -30,7 +34,7 @@ To extract our manually annotated MIMIC-III test data, you should have access to
 
 ## Extracting the English test data
 
-To extract the annotated test data, git clone this repository and place the file **NOTEEVENTS.csv** from the MIMIC-III database inside the same directory. 
+To extract the annotated test data, git clone this repository and place the file **NOTEEVENTS.csv** from the MIMIC-III database inside the data directory of this repository. 
 Then run 
 
 ```python3 extract_test.py```
@@ -63,9 +67,9 @@ The [language] argument should always either be **en** if the language is Englis
 
 To train the fastText vectors as we do, place the preprocessed data in the cloned fastText directory and run
 
-```./fasttext skipgram -input [path to preprocessed data] -output [name of output] -dim 300```
+```./fasttext skipgram -input [path to preprocessed data] -output ../data/embeddings_[language] -dim 300```
 
-The [name of output] argument should be **embeddings\_en** if the language is English or **embeddings\_nl** if the language is Dutch. 
+This makes an embeddings_[language].vec and embeddings_[language].bin file in the data repository.
 
 ### Generating development corpora
 
@@ -127,9 +131,9 @@ scores_setup2 = Development.grid_search(devcorpus_setup2, candidates_setup2, lan
 best_parameters = Development.define_best_parameters('iv'=[scores_setup1, scores_setup2])
 
 # perform grid search for oov penalty
-oov_scores_setup1 = Development.tune_oov(devcorpus_setup1, candidates_list, language='en')
-oov_scores_setup2 = Development.tune_oov(devcorpus_setup2, candidates_list, language='en')
-oov_scores_setup3 = Development.tune_oov(devcorpus_setup3, candidates_list, language='en')
+oov_scores_setup1 = Development.tune_oov(devcorpus_setup1, candidates_list, best_parameters, language='en')
+oov_scores_setup2 = Development.tune_oov(devcorpus_setup2, candidates_list, best_parameters, language='en')
+oov_scores_setup3 = Development.tune_oov(devcorpus_setup3, candidates_list, best_parameters, language='en')
 
 # search for best averaged oov penalty
 best_oov = Development.define_best_parameters('iv'=[oov_scores_setup1, oov_scores_setup2], 'oov'=oov_scores_setup3)

@@ -74,7 +74,7 @@ def corpus_sample(corpus, samplename, samplesize):
 
 # Devcorpus creation function
 
-def make_devcorpus(corpusfile, language, pathtovectors, outfile, oov=False, samplesize=0, editdistance=12):
+def make_devcorpus(corpusfile, language, outfile, oov=False, samplesize=0, editdistance=12):
     """
     :param corpusfile: file containing the corpus to sample from
     :param lexicon_file: json file containing a reference lexicon
@@ -91,7 +91,7 @@ def make_devcorpus(corpusfile, language, pathtovectors, outfile, oov=False, samp
         vocab = set(json.load(f))
 
     # load vector vocab
-    with open(pathtovectors, 'r') as f:
+    with open('../data/embeddings_' + language + '.vec', 'r') as f:
         vector_vocab = set([line.strip() for i, line in enumerate(f) if i > 0])
 
     # load sample
@@ -253,10 +253,10 @@ def sample_80_20(devcorpusfile, amount=0):
 
     devcorpus = [correct_spellings, misspellings, detection_contexts, used_samplelines, distance_idxs]
 
-    with open(devcorpusfile.replace('.json', '') + '_balanced.json', 'w') as f:
+    with open(devcorpusfile, 'w') as f:
         json.dump(devcorpus, f)
 
 if __name__ == "__main__":
-    make_devcorpus(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                   oov=eval(sys.argv[5]), samplesize=int(sys.argv[6]))
-    sample_80_20(sys.argv[4])
+    make_devcorpus(sys.argv[1], sys.argv[2], sys.argv[3],
+                   oov=eval(sys.argv[4]), samplesize=int(sys.argv[5]))
+    sample_80_20(sys.argv[3])
