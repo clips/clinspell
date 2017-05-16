@@ -57,7 +57,7 @@ matches
 
 To extract a frequency list from the preprocessed data, run
 
-```python3 frequency_list.py [path to preprocessed data] [language]```
+```python3 frequencies.py [path to preprocessed data] [language]```
 
 The [language] argument should always either be **en** if the language is English or **nl** if the language is Dutch. 
 
@@ -82,11 +82,11 @@ The [samplesize] argument should contain the number of lines to sample from the 
 
 To generate candidates for a created development corpus, run
 
-```python3 candidates.py [path to preprocessed data] [name of output]```
+```python3 candidates.py [path to preprocessed data] 2 [name of output] [language]```
 
 To generate candidates for our extracted test data or other empirically observed data, run
 
-```python3 candidates.py [path to preprocessed data] [name of output]```
+```python3 candidates.py [path to preprocessed data] all [name of output] [language]```
 
 ### Ranking experiments
 
