@@ -148,19 +148,20 @@ testcorpus = [testfiles[0], testfiles[1], testfiles[2]]
 with open('testcandidates.json', 'r') as f:
         testcandidates = json.load(f)
 
-dev = Development(best_parameters, language='en')
-
 # ranking experiment and analysis per frequency scenario for our context-sensitive model, noisy channel model, and majority frequency
 
 best_parameters['ranking_method'] = 'context'
+dev = Development(best_parameters, language='en')
 accuracy_context, correction_list_context = dev.conduct_experiment(testcorpus, testcandidates)
 frequency_analysis_context = dev.frequency_analysis()
 
 best_parameters['ranking_method'] = 'noisy_channel'
+dev = Development(best_parameters, language='en')
 accuracy_noisychannel, correction_list_noisychannel = dev.conduct_experiment(testcorpus, testcandidates)
 frequency_analysis_noisychannel = dev.frequency_analysis()
 
 best_parameters['ranking_method'] = 'frequency'
+dev = Development(best_parameters, language='en')
 accuracy_frequency, correction_list_frequency = dev.conduct_experiment(testcorpus, testcandidates)
 ```
 
