@@ -12,13 +12,22 @@ MIT
 * Numpy
 * [Reach](https://github.com/stephantul/reach)
 * [pyxdameraulevenshtein](https://github.com/gfairchild/pyxDamerauLevenshtein)
+* [Facebook fastText](https://github.com/facebookresearch/fastText)
 * [fasttext](https://github.com/salestock/fastText.py), a Python interface for Facebook fastText
 
-All packages are available from pip. To install these requirements, just run
+All packages are available from pip, except ```fastText```. To install these requirements, just run
 
 ```pip install -r requirements.txt```
 
 from inside the cloned repository.
+
+In order to build ```fastText```, use the following:
+
+```
+$ git clone https://github.com/facebookresearch/fastText.git
+$ cd fastText
+$ make
+```
 
 To extract our manually annotated MIMIC-III test data, you should have access to the [MIMIC-III database](https://mimic.physionet.org).
 
@@ -57,7 +66,7 @@ To extract a frequency list from the preprocessed data, run
 
 The [language] argument should always either be **en** if the language is English or **nl** if the language is Dutch. 
 
-To train the fastText vectors as we do, place the preprocessed data in the fastText directory of this repository and run
+To train the fastText vectors as we do, place the preprocessed data in the cloned fastText directory and run
 
 ```./fasttext skipgram -input [path to preprocessed data] -output ../data/embeddings_[language] -dim 300```
 
