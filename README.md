@@ -33,6 +33,11 @@ To extract our manually annotated MIMIC-III test data, you should have access to
 
 # Usage
 
+## Demo
+
+To demo the context-sensitive spelling correction model with the best parameters from the experiments,
+go to the **demo** directory and follow the instructions in the README.
+
 ## Extracting the English test data
 
 To extract the annotated test data, git clone this repository and place the file **NOTEEVENTS.csv** from the MIMIC-III database inside the data directory of this repository. 
