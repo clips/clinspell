@@ -1,5 +1,5 @@
-This repository contains source code for the paper 'Unsupervised Context-Sensitive Spelling Correction for English and Dutch Clinical Free-Text with Word and Character N-gram Embeddings', which is currently under review for [CLIN Journal](http://www.clinjournal.org). The source code offered here contains scripts to extract our manually annotated MIMIC-III data, and to
-run the experiments described in the paper.
+This repository contains source code for the paper ['Unsupervised Context-Sensitive Spelling Correction of English and Dutch Clinical Free-Text with Word and Character N-gram Embeddings'](http://www.clinjournal.org/sites/clinjournal.org/files/03.unsupervised-context-sensitive_0.pdf), which is published in Volume 7 of [CLIN Journal](http://www.clinjournal.org/biblio/volume). A shorter paper, which focuses exclusively on our English experiments, was presented at the BioNLP 2017 workshop at ACL: ['Unsupervised Context-Sensitive Spelling Correction of Clinical Free-Text with Word and Character N-gram Embeddings.'](http://www.aclweb.org/anthology/W17-2317) The source code offered here contains scripts to extract our manually annotated MIMIC-III data, and to
+run the experiments described in our paper.
 
 # License
 
