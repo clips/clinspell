@@ -111,15 +111,15 @@ import ranking_experiments
 
 with open('devcorpus_setup1.json', 'r') as f:
         corpusfiles_setup1 = json.load(f)
-devcorpus_setup1 = [corpusfiles[0], corpusfiles[1], corpusfiles[2]]
+devcorpus_setup1 = corpusfiles_setup1[:3]
 
 with open('devcorpus_setup2.json', 'r') as f:
         corpusfiles_setup2 = json.load(f)
-devcorpus_setup2 = [corpusfiles[0], corpusfiles[1], corpusfiles[2]]
+devcorpus_setup2 = corpusfiles_setup2[:3]
 
 with open('devcorpus_setup3.json', 'r') as f:
         corpusfiles_setup3 = json.load(f)
-devcorpus_setup3 = [corpusfiles[0], corpusfiles[1], corpusfiles[2]]
+devcorpus_setup3 = corpusfiles_setup3[:3]
 
 # load candidates for setup 1, 2 and 3
 with open('candidates_devcorpus_setup1.json', 'r') as f:
