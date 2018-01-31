@@ -225,9 +225,9 @@ class Development(object):
 
             # make vector representations of candidates
             for i, candidate in enumerate(candidates):
-                try:
-                    candidate_vectors.append(r._get_normed(candidate))
-                except KeyError:
+                if candidate in r.words:
+                    candidate_vectors.append(self.normalize(np.array(self.model[candidate])))
+                else:
                     if self.include_oov_candidates:
                         candidate_vectors.append(self.normalize(np.array(self.model[candidate])))
                         oov_idxs.append(i)
