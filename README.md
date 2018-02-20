@@ -40,10 +40,9 @@ go to the **demo** directory and follow the instructions in the README.
 
 ## Extracting the English test data
 
-To extract the annotated test data, git clone this repository and place the file **NOTEEVENTS.csv** from the MIMIC-III database inside the data directory of this repository. 
-Then run 
+To extract the annotated test data, run
 
-```python2.7 extract_test.py```
+```python2.7 extract_test.py [path to NOTEEVENTS.csv file from the MIMIC-III database]```
 
 This script preprocesses the **NOTEEVENTS.csv** data and stores the preprocessed data in the file **mimic_preprocessed.txt**. It then extracts the annotated 
 test data, which is stored to the file **testcorpus.json** in four lists: correct replacements, misspellings, misspelling contexts, and line indices.
