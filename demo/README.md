@@ -13,7 +13,6 @@ The following arguments are mandatory:
 	-output 		path to write corrections to
 	-pathtofrequencies 	path to json file containing corpus frequencies for noisy channel ranking model
 	-pathtomodel 		path to .bin file of trained fastText model
-	-pathtovectors 		path to .vec file of trained fastText model
 
 The following arguments are optional (default values between square brackets):
 	-model 		whether to use the context-sensitive (1) or noisy channel (0) ranking model [1]

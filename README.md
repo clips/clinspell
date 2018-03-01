@@ -10,7 +10,6 @@ MIT
 * Python 3
 * Python 2.7
 * Numpy
-* [Reach](https://github.com/stephantul/reach)
 * [pyxdameraulevenshtein](https://github.com/gfairchild/pyxDamerauLevenshtein)
 * [Facebook fastText](https://github.com/facebookresearch/fastText)
 * [fasttext](https://github.com/salestock/fastText.py), a Python interface for Facebook fastText

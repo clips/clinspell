@@ -3,7 +3,6 @@ import sys
 from collections import Counter
 
 def extract_frequencylist(infile, language):
-
     c = Counter()
     with open(infile, 'r') as f:
         for line in f:

@@ -1,23 +1,19 @@
 # dependencies
 from pyxdameraulevenshtein import damerau_levenshtein_distance
 import fasttext
-from reach import Reach
 import numpy as np
 from doublemetaphone import dm
 from candidates import candidates
 
 # built-in packages
-from functools import reduce
-from statistics import mean
 from math import log
-import random
 import json
 import argparse
 
 
 class SpellingCorrection(object):
 
-    def __init__(self, detection_list, language, model, k, backoff, pathtofrequencies, pathtomodel, pathtovectors):
+    def __init__(self, detection_list, language, model, k, backoff, pathtofrequencies, pathtomodel):
         """
         :param detection_list: list with tuples containing (misspelling, list of 10 left context tokens, list of 10 right context tokens)
         :param language: 1 if English, 0 if Dutch
@@ -46,7 +42,6 @@ class SpellingCorrection(object):
         with open(pathtofrequencies, 'r') as f:
             self.frequency_dict = json.load(f)
         self.model = fasttext.load_model(pathtomodel)
-        self.r = Reach.load(pathtovectors, header=True)
 
         # set parameters for correction
         if self.language == "en":
@@ -60,7 +55,7 @@ class SpellingCorrection(object):
     @staticmethod
     def comp_sum(vectors):
         """
-        Composes a single vector representation out of several vectors using summing with reciprocal weighting
+        Composes a single vector representation out of several vectors using summing with reciprocal weighting.
         :param vectors: vectors to be composed
         :return: composed vector representation
         """
@@ -68,7 +63,7 @@ class SpellingCorrection(object):
         weighted_vectors = []
         for i, weight in enumerate(weight_vector):
             weighted_vectors.append(vectors[i] * weight)
-        composed_vector = reduce(lambda x, y: x + y, weighted_vectors)
+        composed_vector = np.sum(weighted_vectors, axis=0)
 
         return composed_vector
 
@@ -84,6 +79,17 @@ class SpellingCorrection(object):
 
         return vector / np.linalg.norm(vector)
 
+    def vectorize(self, sequence, remove_oov=True):
+        """
+        :param sequence: sequence to be vectorized
+        :param remove_oov: whether to vectorize oov tokens
+        :return: vectorized sequence
+        """
+        if remove_oov:
+            sequence = [x for x in sequence if x in self.model.words]
+
+        return [np.array(self.model[x]) for x in sequence]
+
     def context_ranking(self, candidates_list):
         """
         Context-sensitive ranking model
@@ -92,48 +98,40 @@ class SpellingCorrection(object):
         """
         correction_list = []
 
-        for misspelling, left_context, right_context, candidates in zip(self.misspellings, self.left_contexts, self.right_contexts, candidates_list):
+        for misspelling, left_context, right_context, candidates in zip(
+                self.misspellings, self.left_contexts, self.right_contexts, candidates_list):
 
             if not candidates:
                 correction_list.append('')
                 continue
 
             left_context, right_context = left_context[::-1][:self.window_size], right_context[:self.window_size]
-            left_window = [token for token in self.r.vectorize(left_context) if token.any()]  # take only in-voc tokens for context
-            right_window = [token for token in self.r.vectorize(right_context[1]) if token.any()]  # take only in-voc tokens for context
+            left_window = self.vectorize(left_context, remove_oov=True)  # take only in-voc tokens for context
+            right_window = self.vectorize(right_context, remove_oov=True)  # take only in-voc tokens for context
 
             if left_window:
-                try:
-                    vectorized_left_window = self.comp_sum(left_window)
-                except ValueError:
-                    vectorized_left_window = np.zeros(len(center))
+                vectorized_left_window = self.comp_sum(left_window)
             else:
-                vectorized_left_window = np.zeros(len(center))
+                vectorized_left_window = np.zeros(len(self.model.dim))
 
             if right_window:
-                try:
-                    vectorized_right_window = self.comp_sum(right_window)
-                except ValueError:
-                    vectorized_right_window = np.zeros(len(center))
+                vectorized_right_window = self.comp_sum(right_window)
             else:
-                vectorized_right_window = np.zeros(len(center))
+                vectorized_right_window = np.zeros(len(self.model.dim))
 
             if not vectorized_left_window.any() or vectorized_right_window.any():
-                correction_list.append('')
+                correction_list.append('')  # no context to correct the misspelling
                 continue
 
-            vectorized_context = comp_function((vectorized_left_window, vectorized_right_window))
+            vectorized_context = self.normalize(np.sum((vectorized_left_window, vectorized_right_window), axis=0))
 
             candidate_vectors = []
-            remove_idxs = []
             oov_idxs = []
 
             # make vector representations of candidates
             for i, candidate in enumerate(candidates):
-                try:
-                    candidate_vectors.append(self.r[candidate])
-                except KeyError:    # construct vector representation from ngram representations with fastText model
-                    candidate_vectors.append(self.normalize(np.array(self.model[candidate])))
+                candidate_vectors.append(self.normalize(np.array(self.model[candidate])))
+                if candidate not in self.model.words:
                     oov_idxs.append(i)
 
             # calculate cosine similarities
@@ -158,12 +156,12 @@ class SpellingCorrection(object):
 
     def noisychannel_ranking(self, candidates_list):
         """
-        An approximate implementation of the ranking method described in Lai et al. (2015), 'Automated Misspelling Detection and Correction in Clinical Free-Text Records'
+        An approximate implementation of the ranking method described in
+        Lai et al. (2015), 'Automated Misspelling Detection and Correction in Clinical Free-Text Records'
         :param candidates_list: list of candidate list per misspelling
         :return: list with corrections or k-best corrections
         """
         correction_list = []
-        confidences = []
 
         for misspelling, candidates in zip(self.misspellings, candidates_list):
 
@@ -219,12 +217,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-input', help='Input json file containing list of misspellings and contexts', dest='input', required=True, type=str)
     parser.add_argument('-output', help='Output file name to write correction list to', dest='output', required=True, type=str)
-    parser.add_argument('-pathtofrequencies', help='Input json file containing dictionary with words as keys and corpus frequency as value', 
+    parser.add_argument('-pathtofrequencies', help='Input json file containing dictionary with words as keys and corpus frequencies as values',
                             dest='pathtofrequencies', required=True, type=str)
-    parser.add_argument('-pathtomodel', help='Input bin file of trained fastText model', 
+    parser.add_argument('-pathtomodel', help='Input .bin file of trained fastText model',
                             dest='pathtomodel', required=True, type=str)
-    parser.add_argument('-pathtovectors', help='Input bin file of trained fastText model', 
-                            dest='pathtovectors', required=True, type=str)
     parser.add_argument('-model', help='1 for context-sensitive, 0 for noisy channel', dest='model', default=1, type=int)
     parser.add_argument('-k', help='Number of top-ranked corrections to return', dest='k', default=1, type=int)
     parser.add_argument('-language', help='Language of the input, 1 for English, 0 for Dutch', dest='language', default=1, type=int)
@@ -233,7 +229,7 @@ if __name__ == "__main__":
     with open(args.input, 'r') as f:
         detection_list = json.load(f)
     spelling_corrector = SpellingCorrection(detection_list, args.language, args.model, args.k, args.backoff, 
-        args.pathtofrequencies, args.pathtomodel, args.pathtovectors)
+        args.pathtofrequencies, args.pathtomodel)
     corrections = spelling_corrector()
     print(corrections)
     with open(args.output + '.json', 'w') as f:

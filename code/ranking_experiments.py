@@ -2,7 +2,6 @@
 from pyxdameraulevenshtein import damerau_levenshtein_distance
 import fasttext
 from doublemetaphone import dm
-from reach import Reach
 import numpy as np
 
 # built-in packages
@@ -11,7 +10,6 @@ from statistics import mean
 from math import log
 import random
 import json
-import sys
 import time
 
 # development experiments
@@ -28,14 +26,11 @@ class Development(object):
         pathtofrequencies = 'frequencies_' + language + '.json'
         # load trained fasttext model
         pathtomodel = 'embeddings_' + language + '.bin'
-        # give path to fasttext vectors
-        pathtovectors = 'embeddings_' + language + '.vec'
 
         # PHASE 1
         self.comp_function = parameters['comp_function']  # item from ["sum", "mult", "max"]
         self.include_misspelling = parameters['include_misspelling']  # boolean
         self.include_oov_candidates = parameters['include_oov_candidates']  # boolean
-        self.pathtovectors = pathtovectors  # path to fasttext vectors
         self.model = fasttext.load_model(pathtomodel)   # path to fasttext model
 
         # PHASE 2
@@ -63,16 +58,14 @@ class Development(object):
         :param reciprocal: if True, apply reciprocal weighting
         :return: composed vector representation
         """
-
         if not reciprocal:
             composed_vector = np.sum(vectors, axis=0)
-
         else:
             weight_vector = np.reciprocal(np.arange(1., len(vectors) + 1))
             weighted_vectors = []
             for i, weight in enumerate(weight_vector):
                 weighted_vectors.append(vectors[i] * weight)
-            composed_vector = reduce(lambda x, y: x + y, weighted_vectors)
+            composed_vector = np.sum(weighted_vectors, axis=0)
 
         return composed_vector
 
@@ -83,10 +76,8 @@ class Development(object):
         :param reciprocal: if True, apply reciprocal weighting
         :return: composed vector representation
         """
-
         if not reciprocal:
             composed_vector = reduce(lambda x, y: x * y, vectors)
-
         else:
             weight_vector = np.reciprocal(np.arange(1., len(vectors) + 1))
             weighted_vectors = []
@@ -103,10 +94,8 @@ class Development(object):
         :param reciprocal: if True, apply reciprocal weighting
         :return: composed vector representation
         """
-
         if not reciprocal:
             composed_vector = np.amax(vectors, axis=0)
-
         else:
             weight_vector = np.reciprocal(np.arange(1., len(vectors) + 1))
             weighted_vectors = []
@@ -128,6 +117,17 @@ class Development(object):
 
         return vector / np.linalg.norm(vector)
 
+    def vectorize(self, sequence, remove_oov=True):
+        """
+        :param sequence: sequence to be vectorized
+        :param remove_oov: whether to vectorize oov tokens
+        :return: vectorized sequence
+        """
+        if remove_oov:
+            sequence = [x for x in sequence if x in self.model.words]
+
+        return [np.array(self.model[x]) for x in sequence]
+
     @staticmethod
     def spell_score(misspelling, candidates, method=1):
         """
@@ -137,40 +137,33 @@ class Development(object):
         :param method: chosen method from [1, 2, 3, 4]
         :return: list of edit distances between misspelling and each candidate
         """
-
         lexical_scores = [damerau_levenshtein_distance(misspelling, candidate)
                           for candidate in candidates]
 
         if method == 1:
             return lexical_scores
-
         else:
             phonetic_scores = [damerau_levenshtein_distance(dm(misspelling)[0], dm(candidate)[0])
                                for candidate in candidates]
 
         if method == 2:
             return [phonetic_score if phonetic_score != 0 else 1 for phonetic_score in phonetic_scores]
-
         elif method == 3:
             return [0.5 * (a + b) for a, b in zip(lexical_scores, phonetic_scores)]
-
         elif method == 4:
             return [(2 * a + b) ** 2 for a, b in zip(lexical_scores, phonetic_scores)]
-
         else:
             raise ValueError('Method must be element from [1, 2, 3, 4]')
 
-    def ranking_experiment(self, detection_list, detection_contexts, candidates_list, r):
-
+    def ranking_experiment(self, detection_list, detection_contexts, candidates_list):
         """
-        Experimental implementation of our context-sensitive ranking model
+        Experimental implementation of our context-sensitive ranking model.
         :param detection_list: list of misspellings
         :param detection_contexts: list of misspelling context tuples ('left context', 'right context')
         :param candidates_list: list of candidate list per misspelling
         :param r: loaded vector representations
         :return: list with corrections or k-best corrections
         """
-
         correction_list = []
 
         for misspelling, context, candidates in zip(detection_list, detection_contexts, candidates_list):
@@ -195,29 +188,24 @@ class Development(object):
                 processed_context[1] = [t for t in processed_context[1] if t not in self.stopwords]
 
             center = self.normalize(np.array(self.model[misspelling]))  # create or call vector representation for misspelling
-            left_window = [token for token in r.vectorize(processed_context[0]) if token.any()]  # take only in-voc tokens
-            right_window = [token for token in r.vectorize(processed_context[1]) if token.any()]  # take only in-voc tokens
+            left_window = self.vectorize(processed_context[0], remove_oov=True)  # take only in-voc tokens
+            right_window = self.vectorize(processed_context[1], remove_oov=True)  # take only in-voc tokens
 
             if left_window:
-                try:
-                    vectorized_left_window = comp_function(left_window, reciprocal = self.reciprocal)
-                except ValueError:
-                    vectorized_left_window = np.zeros(len(center))
+                vectorized_left_window = comp_function(left_window, reciprocal=self.reciprocal)
             else:
-                vectorized_left_window = np.zeros(len(center))
+                vectorized_left_window = np.zeros(len(self.model.dim))
 
             if right_window:
-                try:
-                    vectorized_right_window = comp_function(right_window, reciprocal = self.reciprocal)
-                except ValueError:
-                    vectorized_right_window = np.zeros(len(center))
+                vectorized_right_window = comp_function(right_window, reciprocal=self.reciprocal)
             else:
-                vectorized_right_window = np.zeros(len(center))
+                vectorized_right_window = np.zeros(len(self.model.dim))
 
             if self.include_misspelling:
                 vectorized_context = comp_function((vectorized_left_window, center, vectorized_right_window))
             else:
                 vectorized_context = comp_function((vectorized_left_window, vectorized_right_window))
+            vectorized_context = self.normalize(vectorized_context)
 
             candidate_vectors = []
             remove_idxs = []
@@ -225,7 +213,7 @@ class Development(object):
 
             # make vector representations of candidates
             for i, candidate in enumerate(candidates):
-                if candidate in r.words:
+                if candidate in self.model.words:
                     candidate_vectors.append(self.normalize(np.array(self.model[candidate])))
                 else:
                     if self.include_oov_candidates:
@@ -279,16 +267,8 @@ class Development(object):
         correction_list = []
         confidences = []
 
-        print("Loading vector representations")
-        r = Reach.load(self.pathtovectors, header=True)
-        print("Done")
-
         for misspelling, candidates in zip(detection_list, candidates_list):
-
-            # candidates = [candidate for candidate in candidates if candidate in r.words.keys()]
-
             score_list = []
-
             for candidate in candidates:
                 orthographic_edit_distance = damerau_levenshtein_distance(misspelling, candidate)
                 phonetic_edit_distance = damerau_levenshtein_distance(dm(misspelling)[0], dm(candidate)[0])
@@ -337,12 +317,7 @@ class Development(object):
         :param candidates_list: list of candidate list per misspelling
         :return: list with corrections or k-best corrections
         """
-
         correction_list = []
-
-        print("Loading vector representations")
-        r = Reach.load(self.pathtovectors, header=True)
-        print("Done")
 
         for misspelling, candidates in zip(detection_list, candidates_list):
 
@@ -371,7 +346,6 @@ class Development(object):
         :param k: number of folds
         :return: correction accuracy averaged over k subsampled folds
         """
-
         length = len(correction_list)
         all_idxs = list(range(length))
         random.seed(0.56)
@@ -404,7 +378,6 @@ class Development(object):
         :param candidates_list: list of candidate list per misspelling
         :return: correction accuracy, list of corrections
         """
-
         corrected_list = devcorpus[0]
         detection_list = devcorpus[1]
         detection_contexts = devcorpus[2]
@@ -415,19 +388,13 @@ class Development(object):
         self.candidates_list = candidates_list
 
         if self.ranking_method == 'context':
-            print("Loading embeddings")
-            r = Reach.load(self.pathtovectors, header=True)
-            print("Done")
-            correction_list = self.ranking_experiment(detection_list, detection_contexts, candidates_list, r)
+            correction_list = self.ranking_experiment(detection_list, detection_contexts, candidates_list)
         elif self.ranking_method == 'noisy_channel':
             correction_list = self.noisychannel_ranking(detection_list, candidates_list)
         elif self.ranking_method == 'frequency':
             correction_list = self.frequency_baseline(detection_list, candidates_list)
         elif self.ranking_method == 'ensemble':
-            print("Loading embeddings")
-            r = Reach.load(self.pathtovectors, header=True)
-            print("Done")
-            correction_list = self.ranking_experiment(detection_list, detection_contexts, candidates_list, r)
+            correction_list = self.ranking_experiment(detection_list, detection_contexts, candidates_list)
             correction_list_2 = self.noisychannel_ranking(detection_list, candidates_list)
             for i, confidence in enumerate(self.confidences):
                 if confidence > 1.3:
@@ -451,7 +418,6 @@ class Development(object):
         :param language: language from ["en", "nl"]
         :return: dictionary with parameter settings as keys and their correction accuracy as values
         """
-
         # default parameters
         parameters = {'comp_function': 'sum',
                       'include_misspelling': False,
@@ -465,10 +431,6 @@ class Development(object):
                       'k-best': 1}
 
         dev = Development(parameters, language)
-
-        print("Loading embeddings")
-        r = Reach.load(dev.pathtovectors, header=True)
-        print("Done")
 
         corrected_list = devcorpus[0]
         detection_list = devcorpus[1]
@@ -494,9 +456,8 @@ class Development(object):
                             dev.remove_stopwords = remove_stopwords
                             for edit_distance in range(1, 5):
                                 dev.edit_distance = edit_distance
-                                correction_list = dev.ranking_experiment(detection_list,
-                                                                        detection_contexts,
-                                                                        candidates_list, r)
+                                correction_list = dev.ranking_experiment(detection_list,detection_contexts,
+                                                                        candidates_list)
                                 accuracy = len([c for i, c in enumerate(correction_list)
                                                 if c == corrected_list[i]]) / len(correction_list)
                                 parameters = (comp_function, include_misspelling, window_size, reciprocal,
@@ -517,12 +478,7 @@ class Development(object):
         :param language: language from ["en", "nl"]
         :return: dictionary with oov penalties as keys and their correction accuracy as values
         """
-
         dev = Development(best_parameters, language)
-
-        print("Loading embeddings")
-        r = Reach.load(dev.pathtovectors, header=True)
-        print("Done")
 
         corrected_list = devcorpus[0]
         detection_list = devcorpus[1]
@@ -535,9 +491,7 @@ class Development(object):
 
         for value in values:
             dev.oov_penalty = value
-            correction_list = dev.ranking_experiment(detection_list,
-                                                     detection_contexts,
-                                                     candidates_list, r)
+            correction_list = dev.ranking_experiment(detection_list, detection_contexts, candidates_list)
             accuracy = len([c for i, c in enumerate(correction_list)
                             if c == corrected_list[i]]) / len(correction_list)
             scores_dict[value] = accuracy
@@ -554,7 +508,6 @@ class Development(object):
         Development.tune_oov()
         :return: best parameters or oov penalty averaged over several corpora
         """
-
         if "oov" not in kwargs.keys():  # grid search
             averaged_scores_dict = {}
             for scores_dict in kwargs['iv']:
@@ -606,13 +559,10 @@ class Development(object):
         highest frequency (1), or lower relative frequency (2) of all candidates
         :return: dictionary with correction accuracy per scenario
         """
-
         scores_dict = {}
 
         for j in [0, 1, 2]:
-
             idxs = []
-
             for i, candidates in enumerate(self.candidates_list):
 
                 frequencies = [self.frequency_dict[c] if c in self.frequency_dict.keys() else 1 for c in candidates]
