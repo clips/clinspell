@@ -77,12 +77,12 @@ def corpus_sample(corpus, samplename, samplesize):
 def make_devcorpus(corpusfile, language, outfile, window_size=10, oov=False, samplesize=0, editdistance=12):
     """
     :param corpusfile: file containing the corpus to sample from
-    :param lexicon_file: json file containing a reference lexicon
-    :param pathtovectors: path to vec file containing trained fastText vectors
-    :param oov: True if the distorted words are absent from the vector vocabulary
+    :param language: language from ['en', 'nl']
+    :param outfile: name of devcorpus file
+    :param window_size: minimal amount of tokens on each side of a generated misspelling
+    :param oov: True if the generated misspellings need to be absent from the vector vocabulary
     :param samplesize: number of lines to sample
     :param editdistance: the type of edit distances generated: 1, 2 or 1 and 2 (80-20 proportion)
-    :return: devcorpus with all relevant lists
     """
 
     # load lexicon
