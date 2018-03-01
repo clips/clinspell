@@ -76,5 +76,5 @@ if __name__ == "__main__":
 
     print('Finished')
 
-    with open('../data/testcorpus.json', 'w') as f:
+    with open('testcorpus.json', 'w') as f:
         json.dump((final_corrected, final_misspellings, detection_contexts, final_line_idxs), f)

@@ -80,9 +80,10 @@ This makes an embeddings_[language].vec and embeddings_[language].bin file in th
 
 To create a development corpus from preprocessed data, run
 
-```python3 make_devcorpus.py [path to preprocessed data] [language] [path to created devcorpus] [allow_oov] [samplesize]```
+```python3 make_devcorpus.py [path to preprocessed data] [language] [path to created devcorpus] [window size] [allow oov] [samplesize]```
 
-The [allow_oov] argument should be False for development setup 1 or 2 from the paper, and True for development setup 3. 
+The [window size] argument specifies the minimal token window size on each side of a generated development instance.
+The [allow oov] argument should be False for development setup 1 or 2 from the paper, and True for development setup 3. 
 The [samplesize] argument should contain the number of lines to sample from the data.
 
 ## Conducting experiments

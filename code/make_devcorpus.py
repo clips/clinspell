@@ -39,8 +39,8 @@ def lettersub(word):
     letterlist[i] = random.choice(string.ascii_lowercase.replace(letterlist[i], ""))
     return "".join(letterlist)
 
-# Corpus sample function
 
+# Corpus sample function
 def corpus_sample(corpus, samplename, samplesize):
     """
     :param corpus: preprocessed corpus text file to sample from
@@ -74,7 +74,7 @@ def corpus_sample(corpus, samplename, samplesize):
 
 # Devcorpus creation function
 
-def make_devcorpus(corpusfile, language, outfile, oov=False, samplesize=0, editdistance=12):
+def make_devcorpus(corpusfile, language, outfile, window_size=10, oov=False, samplesize=0, editdistance=12):
     """
     :param corpusfile: file containing the corpus to sample from
     :param lexicon_file: json file containing a reference lexicon
@@ -112,89 +112,86 @@ def make_devcorpus(corpusfile, language, outfile, oov=False, samplesize=0, editd
     distance_idxs = [] # keep track which element has which edit distance
 
     for j, line in enumerate(corpus):
-        print(j)
-        if len(line.split()) > 500:
+        print('Line {}:'.format(j))
+        if len(line.split()) < 1 + window_size * 2:
+            # check whether a context frame of min_window_size tokens on each side can be extracted for at least 1 token
+            print('Line too short, skipping to next line.')
             continue
+        print('Collecting candidate words...')
         idxs = []
         for i, word in enumerate(line.split()):
             if not oov:
                 if (word in vocab) and (len(word) > 3) and (word in vector_vocab):
-                    if (i-10 >= 0) and (i + 10 < len(line.split())):
-                        """
-                        check whether a context frame of 10 tokens on each side can be extracted
-                        """
+                    if (i-window_size >= 0) and (i + window_size < len(line.split())):
+                        # check whether a context frame of min_window_size tokens on each side can be extracted
                         idxs.append(i)
             else:
                 if (word in vocab) and (len(word) > 3) and (word not in vector_vocab):
-                    if (i-10 >= 0) and (i + 10 < len(line.split())):
+                    if (i-window_size >= 0) and (i + window_size < len(line.split())):
                         idxs.append(i)
         if idxs:
             i = random.choice(idxs)
             word = line.split()[i]
+            print("{} candidates, sampled '{}' ".format(len(idxs), word))
         else:  # skip to next line if no eligible words
+            print('No eligible words found, skipping to next line.')
             continue
 
         correct_spellings.append(word)
+        misspelling = ''
 
         if editdistance == 1:
             REDLIGHT = 1
             while REDLIGHT:
-                misspelling_1 = random.choice(functionlist)(word)
-                if misspelling_1 not in vocab:
-                    misspellings.append(misspelling_1)
+                misspelling = random.choice(functionlist)(word)
+                if misspelling not in vocab:
+                    misspellings.append(misspelling)
                     distance_idxs.append(1)
                     REDLIGHT = 0
-                print("I'm stuck!")
-                print(word)
 
         elif editdistance == 2:
             REDLIGHT = 1
             while REDLIGHT:
-                misspelling_2 = random.choice(functionlist)(random.choice(functionlist)(word))
-                if (misspelling_2 not in vocab) and (damerau_levenshtein_distance(misspelling_2, word) == 2):
-                    misspellings.append(misspelling_2)
+                misspelling = random.choice(functionlist)(random.choice(functionlist)(word))
+                if (misspelling not in vocab) and (damerau_levenshtein_distance(misspelling, word) == 2):
+                    misspellings.append(misspelling)
                     distance_idxs.append(2)
                     REDLIGHT = 0
-                print("I'm stuck!")
-                print(word)
 
         elif editdistance == 12:  # 80% edit distance 1, 20% edit distance 2
             if j % 5 == 0:
                 REDLIGHT = 1
                 while REDLIGHT:
-                    misspelling_2 = random.choice(functionlist)(random.choice(functionlist)(word))
-                    if (misspelling_2 not in vocab) and (damerau_levenshtein_distance(misspelling_2, word) == 2):
-                        misspellings.append(misspelling_2)
+                    misspelling = random.choice(functionlist)(random.choice(functionlist)(word))
+                    if (misspelling not in vocab) and (damerau_levenshtein_distance(misspelling, word) == 2):
+                        misspellings.append(misspelling)
                         distance_idxs.append(2)
                         REDLIGHT = 0
-                    print("I'm stuck!")
-                    print(word)
             else:
                 REDLIGHT = 1
                 while REDLIGHT:
-                    misspelling_1 = random.choice(functionlist)(word)
-                    if misspelling_1 not in vocab:
-                        misspellings.append(misspelling_1)
+                    misspelling = random.choice(functionlist)(word)
+                    if misspelling not in vocab:
+                        misspellings.append(misspelling)
                         distance_idxs.append(1)
                         REDLIGHT = 0
-                    print("I'm stuck!")
-                    print(word)
 
         # append corresponding context window
-        misspelling_contexts.append(((" ".join(line.split()[i-10:i])), (" ".join(line.split()[i+1:i+11]))))
+        misspelling_contexts.append(((" ".join(line.split()[i-window_size:i])),
+                                     (" ".join(line.split()[i+1:i+window_size+1]))))
 
         # append index of used line in sample
         used_samplelines.append(j)
 
         # keeping track
-        print(j)
-        print(str(len(misspellings)) + " instances")
+        print('Resulting misspelling: {}'.format(misspelling))
+        print("{} instances collected".format(len(misspellings)))
 
-    print('Finished!')
-
+    print('Finished corpus generation. Saving...')
     # save corpus
     with open(outfile, 'w') as f:
         json.dump((correct_spellings, misspellings, misspelling_contexts, used_samplelines, distance_idxs), f)
+    print('Done.')
 
     # return corpus
     return correct_spellings, misspellings, misspelling_contexts, used_samplelines, distance_idxs
@@ -257,6 +254,6 @@ def sample_80_20(devcorpusfile, amount=0):
         json.dump(devcorpus, f)
 
 if __name__ == "__main__":
-    make_devcorpus(sys.argv[1], sys.argv[2], sys.argv[3],
-                   oov=eval(sys.argv[4]), samplesize=int(sys.argv[5]))
+    make_devcorpus(sys.argv[1], sys.argv[2], sys.argv[3], window_size=sys.argv[4],
+                   oov=eval(sys.argv[5]), samplesize=int(sys.argv[6]))
     sample_80_20(sys.argv[3])
