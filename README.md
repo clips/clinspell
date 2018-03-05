@@ -74,6 +74,7 @@ To train the fastText vectors as we do, place the preprocessed data in the clone
 ```./fasttext skipgram -input [path to preprocessed data] -output ../data/embeddings_[language] -dim 300```
 
 This makes an embeddings_[language].vec and embeddings_[language].bin file in the data repository.
+Only the embeddings_[language].bin file is used by the code.
 
 ### Generating development corpora
 

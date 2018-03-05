@@ -1,5 +1,6 @@
 # dependencies
 from pyxdameraulevenshtein import damerau_levenshtein_distance
+import fasttext
 
 # built-in packages
 import random
@@ -84,15 +85,14 @@ def make_devcorpus(corpusfile, language, outfile, window_size=10, oov=False, sam
     :param samplesize: number of lines to sample
     :param editdistance: the type of edit distances generated: 1, 2 or 1 and 2 (80-20 proportion)
     """
-
     # load lexicon
     assert language in ['en', 'nl']
-    with open('lexicon_' + language + '.json', 'r') as f:
+    with open('lexicon_{}.json'.format(language), 'r') as f:
         vocab = set(json.load(f))
 
     # load vector vocab
-    with open('../data/embeddings_' + language + '.vec', 'r') as f:
-        vector_vocab = set([line.strip() for i, line in enumerate(f) if i > 0])
+    model = fasttext.load_model('../data/embeddings_{}.bin'.format(language))
+    vector_vocab = model.words
 
     # load sample
     if samplesize:
