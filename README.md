@@ -29,6 +29,7 @@ $ make
 ```
 
 To extract our manually annotated MIMIC-III test data, you should have access to the [MIMIC-III database](https://mimic.physionet.org).
+It's important that this is specifically MIMIC-III v1.3: our extraction script only works for this version.
 
 # Usage
 
@@ -41,7 +42,7 @@ go to the **demo** directory and follow the instructions in the README.
 
 To extract the annotated test data, run
 
-```python2.7 extract_test.py [path to NOTEEVENTS.csv file from the MIMIC-III database]```
+```python2.7 extract_test.py [path to NOTEEVENTS.csv file from the MIMIC-III v1.3 database]```
 
 This script preprocesses the **NOTEEVENTS.csv** data and stores the preprocessed data in the file **mimic_preprocessed.txt**. It then extracts the annotated 
 test data, which is stored to the file **testcorpus.json** in four lists: correct replacements, misspellings, misspelling contexts, and line indices.
